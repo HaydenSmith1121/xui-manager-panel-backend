@@ -40,6 +40,17 @@ class SplitDeployCorsTests(unittest.TestCase):
         self.assertIsInstance(response, Response)
         self.assertEqual(response.status, 403)
 
+    def test_same_public_origin_with_proxy_host_missing_port_can_post_json(self):
+        app = self.make_app()
+        request_headers = {
+            "Content-Type": "application/json",
+            "Origin": "http://66.212.16.58:25888",
+            "Host": "66.212.16.58",
+            "X-Forwarded-Proto": "http",
+        }
+        with patch.dict(os.environ, {"FRONTEND_ORIGIN": "", "CORS_ALLOWED_ORIGINS": ""}, clear=False):
+            self.assertIsNone(app.require_mutation_headers(request_headers))
+
     def test_cookie_attributes_can_support_cross_site_deploy(self):
         with patch.dict(
             os.environ,

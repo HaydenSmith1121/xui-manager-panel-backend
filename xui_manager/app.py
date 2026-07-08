@@ -485,9 +485,12 @@ class XuiManagerApp:
         source = origin or referer
         if not source:
             return None
-        source_host = urllib.parse.urlparse(source).netloc
-        target_host = headers.get("X-Forwarded-Host") or headers.get("Host") or ""
-        if source_host and target_host and source_host.lower() != target_host.lower():
+        source_parts = urllib.parse.urlparse(source)
+        source_host = (source_parts.hostname or "").lower()
+        source_netloc = source_parts.netloc.lower()
+        target_netloc = (headers.get("X-Forwarded-Host") or headers.get("Host") or "").lower()
+        target_host = target_netloc.rsplit(":", 1)[0] if ":" in target_netloc and not target_netloc.startswith("[") else target_netloc
+        if source_netloc and target_netloc and source_netloc != target_netloc and source_host != target_host:
             if self.is_allowed_cors_origin(origin or source):
                 return None
             return self.json_response({"error": "Cross-origin request rejected"}, 403)
