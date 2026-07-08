@@ -222,6 +222,9 @@ class BalanceCommerceTests(unittest.TestCase):
         self.assertTrue(deleted_unused)
         self.assertEqual(self.db.list_recharge_cards(), [])
 
+    def test_deleting_missing_recharge_card_is_treated_as_already_removed(self):
+        self.assertFalse(self.db.delete_recharge_card(999999))
+
     def test_admin_adjustment_rejects_negative_result_and_note_marks_priority_user(self):
         credited = self.db.adjust_user_balance(self.user["id"], 800, "service credit", self.admin["id"])
         noted = self.db.update_user_note(self.user["id"], "长期客户", True)

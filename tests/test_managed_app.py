@@ -162,6 +162,12 @@ class ManagedAppTests(unittest.TestCase):
         self.assertTrue(json.loads(deleted_with_method.body)["deleted"])
         self.assertEqual(json.loads(listed.body)["cards"], [])
 
+    def test_admin_recharge_card_delete_treats_missing_card_as_removed(self):
+        response = self.post_admin("/api/admin/recharge-cards/delete", {"id": 999999})
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(json.loads(response.body), {"deleted": False})
+
     def test_admin_profile_can_redeem_gift_card(self):
         generated = self.post_admin("/api/admin/recharge-cards", {"amount_yuan": 15, "count": 1})
         card = json.loads(generated.body)["cards"][0]

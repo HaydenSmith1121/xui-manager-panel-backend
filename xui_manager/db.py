@@ -792,7 +792,7 @@ class Database:
                 "select id, status from recharge_cards where id=?", (int(card_id),)
             ).fetchone()
             if not row:
-                raise ValueError("充值卡不存在")
+                return False
             if row["status"] == "used":
                 raise ValueError("已使用充值卡不能删除")
             deleted = conn.execute("delete from recharge_cards where id=?", (int(card_id),))
