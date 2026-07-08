@@ -205,7 +205,7 @@ class XuiManagerApp:
                 user = self.require_admin(headers)
                 if isinstance(user, Response):
                     return user
-                if method == "POST":
+                if method in {"POST", "DELETE"}:
                     guard = self.require_mutation_headers(headers)
                     if guard:
                         return guard
@@ -219,6 +219,7 @@ class XuiManagerApp:
         return self.json_response({"error": "Not found"}, 404)
 
     def handle_admin(self, method: str, path: str, headers: dict[str, str], payload: dict[str, Any]) -> Response:
+        path = path.rstrip("/") or path
         if method == "GET" and path == "/api/admin/users":
             return self.json_response({"users": [self.admin_user_summary(user, headers) for user in self.db.list_users()]})
         if method == "POST" and path == "/api/admin/users/balance":
@@ -248,7 +249,7 @@ class XuiManagerApp:
             return self.json_response(self.db.reveal_recharge_card(int(payload["id"]), recharge_card_secret()))
         if method == "POST" and path == "/api/admin/recharge-cards/void":
             return self.json_response({"card": self.db.void_recharge_card(int(payload["id"]))})
-        if method == "POST" and path == "/api/admin/recharge-cards/delete":
+        if method in {"POST", "DELETE"} and path == "/api/admin/recharge-cards/delete":
             return self.json_response({"deleted": self.db.delete_recharge_card(int(payload["id"]))})
         if method == "POST" and path == "/api/admin/users/approve":
             existing = self.db.get_user(int(payload["user_id"]))
@@ -695,6 +696,12 @@ def make_handler(app: XuiManagerApp) -> type[BaseHTTPRequestHandler]:
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode("utf-8") if length else ""
             self.write_response(app.handle_json("POST", path, self.header_map(), body))
+
+        def do_DELETE(self) -> None:  # noqa: N802
+            path = urllib.parse.urlparse(self.path).path
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length).decode("utf-8") if length else ""
+            self.write_response(app.handle_json("DELETE", path, self.header_map(), body))
 
         def write_response(self, response: Response, include_body: bool = True) -> None:
             data = response.body.encode("utf-8")

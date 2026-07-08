@@ -138,6 +138,30 @@ class ManagedAppTests(unittest.TestCase):
         self.assertTrue(json.loads(deleted.body)["deleted"])
         self.assertEqual([card["id"] for card in remaining], [cards[1]["id"]])
 
+    def test_admin_recharge_card_delete_accepts_delete_method_and_trailing_slash(self):
+        generated = self.post_admin("/api/admin/recharge-cards", {"amount_yuan": 25, "count": 2})
+        cards = json.loads(generated.body)["cards"]
+
+        deleted_with_slash = self.app.handle_json(
+            "POST",
+            "/api/admin/recharge-cards/delete/",
+            self.headers,
+            json.dumps({"id": cards[0]["id"]}),
+        )
+        deleted_with_method = self.app.handle_json(
+            "DELETE",
+            "/api/admin/recharge-cards/delete",
+            self.headers,
+            json.dumps({"id": cards[1]["id"]}),
+        )
+        listed = self.app.handle_json("GET", "/api/admin/recharge-cards", self.headers, "")
+
+        self.assertEqual(deleted_with_slash.status, 200)
+        self.assertTrue(json.loads(deleted_with_slash.body)["deleted"])
+        self.assertEqual(deleted_with_method.status, 200)
+        self.assertTrue(json.loads(deleted_with_method.body)["deleted"])
+        self.assertEqual(json.loads(listed.body)["cards"], [])
+
     def test_admin_profile_can_redeem_gift_card(self):
         generated = self.post_admin("/api/admin/recharge-cards", {"amount_yuan": 15, "count": 1})
         card = json.loads(generated.body)["cards"][0]
