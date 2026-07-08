@@ -201,6 +201,27 @@ class BalanceCommerceTests(unittest.TestCase):
         self.assertNotIn("code_hash", listed[0])
         self.assertNotIn(cards[0]["code"], str(listed[0]))
 
+    def test_admin_can_void_unused_recharge_card(self):
+        cards = self.db.create_recharge_cards(2500, 1, self.admin["id"])
+
+        voided = self.db.void_recharge_card(cards[0]["id"])
+
+        self.assertEqual(voided["status"], "voided")
+        self.assertEqual(self.db.list_recharge_cards()[0]["status"], "voided")
+        with self.assertRaisesRegex(ValueError, "无效或已使用"):
+            self.db.redeem_recharge_card(self.user["id"], cards[0]["code"])
+
+    def test_admin_can_delete_unused_or_voided_recharge_card(self):
+        cards = self.db.create_recharge_cards(2500, 2, self.admin["id"])
+        self.db.void_recharge_card(cards[0]["id"])
+
+        deleted_voided = self.db.delete_recharge_card(cards[0]["id"])
+        deleted_unused = self.db.delete_recharge_card(cards[1]["id"])
+
+        self.assertTrue(deleted_voided)
+        self.assertTrue(deleted_unused)
+        self.assertEqual(self.db.list_recharge_cards(), [])
+
     def test_admin_adjustment_rejects_negative_result_and_note_marks_priority_user(self):
         credited = self.db.adjust_user_balance(self.user["id"], 800, "service credit", self.admin["id"])
         noted = self.db.update_user_note(self.user["id"], "长期客户", True)

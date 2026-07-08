@@ -246,6 +246,10 @@ class XuiManagerApp:
             return self.json_response({"cards": cards})
         if method == "POST" and path == "/api/admin/recharge-cards/reveal":
             return self.json_response(self.db.reveal_recharge_card(int(payload["id"]), recharge_card_secret()))
+        if method == "POST" and path == "/api/admin/recharge-cards/void":
+            return self.json_response({"card": self.db.void_recharge_card(int(payload["id"]))})
+        if method == "POST" and path == "/api/admin/recharge-cards/delete":
+            return self.json_response({"deleted": self.db.delete_recharge_card(int(payload["id"]))})
         if method == "POST" and path == "/api/admin/users/approve":
             existing = self.db.get_user(int(payload["user_id"]))
             if not existing:

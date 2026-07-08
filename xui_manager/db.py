@@ -765,6 +765,39 @@ class Database:
                 "masked_code": f"HXY-****-****-{row['code_suffix']}",
             }
 
+    def void_recharge_card(self, card_id: int) -> dict[str, Any]:
+        with self.session() as conn:
+            conn.execute("begin immediate")
+            row = conn.execute(
+                "select id, status from recharge_cards where id=?", (int(card_id),)
+            ).fetchone()
+            if not row:
+                raise ValueError("充值卡不存在")
+            if row["status"] != "unused":
+                raise ValueError("只能作废未使用的充值卡")
+            updated = conn.execute(
+                "update recharge_cards set status='voided' where id=? and status='unused'", (int(card_id),)
+            )
+            if updated.rowcount != 1:
+                raise ValueError("只能作废未使用的充值卡")
+        for card in self.list_recharge_cards():
+            if int(card["id"]) == int(card_id):
+                return card
+        raise ValueError("充值卡不存在")
+
+    def delete_recharge_card(self, card_id: int) -> bool:
+        with self.session() as conn:
+            conn.execute("begin immediate")
+            row = conn.execute(
+                "select id, status from recharge_cards where id=?", (int(card_id),)
+            ).fetchone()
+            if not row:
+                raise ValueError("充值卡不存在")
+            if row["status"] == "used":
+                raise ValueError("已使用充值卡不能删除")
+            deleted = conn.execute("delete from recharge_cards where id=?", (int(card_id),))
+            return deleted.rowcount == 1
+
     def redeem_recharge_card(self, user_id: int, code: str) -> dict[str, Any]:
         normalized = str(code or "").strip().upper()
         digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()

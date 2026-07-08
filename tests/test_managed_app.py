@@ -123,6 +123,21 @@ class ManagedAppTests(unittest.TestCase):
         self.assertNotIn("code_hash", admin_list.body)
         self.assertNotIn(cards[0]["code"], admin_list.body)
 
+    def test_admin_can_void_and_delete_recharge_cards(self):
+        generated = self.post_admin("/api/admin/recharge-cards", {"amount_yuan": 25, "count": 2})
+        cards = json.loads(generated.body)["cards"]
+
+        voided = self.post_admin("/api/admin/recharge-cards/void", {"id": cards[0]["id"]})
+        deleted = self.post_admin("/api/admin/recharge-cards/delete", {"id": cards[0]["id"]})
+        listed = self.app.handle_json("GET", "/api/admin/recharge-cards", self.headers, "")
+        remaining = json.loads(listed.body)["cards"]
+
+        self.assertEqual(voided.status, 200)
+        self.assertEqual(json.loads(voided.body)["card"]["status"], "voided")
+        self.assertEqual(deleted.status, 200)
+        self.assertTrue(json.loads(deleted.body)["deleted"])
+        self.assertEqual([card["id"] for card in remaining], [cards[1]["id"]])
+
     def test_admin_profile_can_redeem_gift_card(self):
         generated = self.post_admin("/api/admin/recharge-cards", {"amount_yuan": 15, "count": 1})
         card = json.loads(generated.body)["cards"][0]
