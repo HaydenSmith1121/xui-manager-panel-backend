@@ -734,7 +734,7 @@ def run() -> None:
     if admin_email and admin_password:
         app.db.seed_admin(admin_email, admin_password)
     host = os.environ.get("LISTEN_HOST", "0.0.0.0")
-    port = int(os.environ.get("LISTEN_PORT", "25888"))
+    port = int(os.environ.get("LISTEN_PORT", "25889"))
     server = ThreadingHTTPServer((host, port), make_handler(app))
     print(f"xui-manager-panel listening on {host}:{port}")
     worker = PeriodicSyncWorker(app.usage_sync, lambda: app.db.get_setting("sync_interval_seconds", "300"))
