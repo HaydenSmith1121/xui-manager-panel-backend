@@ -86,6 +86,16 @@ class ManagedSubscriptionTests(unittest.TestCase):
         self.assertEqual(profile_title, "良心云")
         self.assertTrue(body.startswith('name: "良心云"'))
 
+    def test_default_subscription_title_is_black_heart_cloud(self):
+        user = self.active_user("user@example.com")
+        self.provisioned_client(user)
+
+        response, body = self.response_yaml(user)
+
+        profile_title = base64.b64decode(response.headers["Profile-Title"]).decode("utf-8")
+        self.assertEqual(profile_title, "黑心云")
+        self.assertTrue(body.startswith('name: "黑心云"'))
+
     def test_clash_subscription_is_yaml_for_broader_clash_client_compatibility(self):
         user = self.active_user("clash@example.com")
         self.provisioned_client(user)
@@ -93,7 +103,7 @@ class ManagedSubscriptionTests(unittest.TestCase):
         response = build_clash_subscription(self.db, user["token"])
 
         self.assertEqual(response.headers["Content-Type"], "text/yaml; charset=utf-8")
-        self.assertTrue(response.body.startswith('name: "clash@example.com"'))
+        self.assertTrue(response.body.startswith('name: "黑心云"'))
         self.assertIn('proxies:\n  - name: "Managed"', response.body)
         self.assertIn('proxy-groups:\n  - name: "Proxy"', response.body)
         self.assertNotIn("{", response.body.splitlines()[0])

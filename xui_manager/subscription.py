@@ -13,6 +13,7 @@ from .vless import replace_vless_uuid
 
 
 SHARE_LINK_RE = re.compile(r"(?im)\b(vless|vmess|trojan|ss)://[^\s]+")
+DEFAULT_SUBSCRIPTION_TITLE = "黑心云"
 
 
 @dataclass
@@ -155,9 +156,10 @@ def subscription_headers(upload: int, download: int, quota: int, expire_at: int,
     }
 
 
-def subscription_title(db: Any, fallback: str) -> str:
+def subscription_title(db: Any, fallback: str = DEFAULT_SUBSCRIPTION_TITLE) -> str:
     title = str(db.get_setting("subscription_title", "") or "").strip()
-    return title or fallback
+    default_title = DEFAULT_SUBSCRIPTION_TITLE or fallback
+    return title or default_title
 
 
 def subscription_response(
