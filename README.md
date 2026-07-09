@@ -78,6 +78,38 @@ export CORS_ALLOWED_ORIGINS=https://front-a.example.com,https://front-b.example.
 
 注意：后端使用 `LISTEN_PORT`，不是 `PORT`。
 
+## Jenkins 版本发布与回滚
+
+仓库内置 `Jenkinsfile`、`deploy/jenkins-deploy.sh` 和 `deploy/rollback.sh`，用于把每次构建发布成独立版本目录，并通过 `current` / `previous` 软链接实现快速回滚。
+
+### 发布方式
+
+Jenkins 任务建议使用 Pipeline from SCM，仓库地址填写本后端仓库，脚本路径保持默认 `Jenkinsfile`。构建参数：
+
+- `ACTION=deploy`：发布当前代码为新版本。
+- `ACTION=rollback`：回滚到上一个版本，或回滚到 `TARGET_RELEASE` 指定版本。
+- `TARGET_RELEASE`：可填写版本目录名，也可填写完整版本目录路径；留空则回退 `previous` 或最近上一个版本。
+- `LISTEN_HOST`：后端监听地址，同域代理推荐 `127.0.0.1`。
+- `LISTEN_PORT`：后端监听端口，默认 `25889`。
+- `KEEP_RELEASES`：保留最近几个版本，默认 `5`。
+
+### 版本目录
+
+发布后文件结构如下：
+
+~~~text
+/opt/xui-manager-panel-backend/
+  releases/BUILD-COMMIT/
+  current -> releases/当前版本
+  previous -> releases/上一个版本
+~~~
+
+systemd 服务的 `WorkingDirectory` 指向 `current` 软链接。发布前会备份 SQLite 数据库到 `/root/xui-manager-panel-app.db.bak.*`；发布失败时脚本会自动切回旧版本并重启服务。
+
+### Jenkins sudo 权限
+
+部署机上的 Jenkins 用户需要允许免密执行发布脚本涉及的命令，至少包括 `bash`、`systemctl daemon-reload`、`systemctl restart xui-manager-panel-backend`、`ln`、`cp`、`rm` 等。建议先在测试环境跑通再接生产站点。
+
 ## 升级
 
 ~~~bash
