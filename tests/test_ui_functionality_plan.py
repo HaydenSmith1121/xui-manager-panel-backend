@@ -352,6 +352,28 @@ class UiFunctionalityPlanTests(unittest.TestCase):
         self.assertEqual(ticket_after_reply["replies"][-1]["message"], "我这边还有问题")
         self.assertEqual(json.loads(admin_list.body)["tickets"][0]["user_email"], "ticket@example.com")
 
+        admin_created = self.app.handle_json(
+            "POST",
+            "/api/tickets",
+            headers,
+            json.dumps({"subject": "需要删除", "message": "管理员删除测试"}),
+        )
+        admin_ticket = json.loads(admin_created.body)["ticket"]
+        admin_delete = self.post_admin("/api/admin/tickets/delete", {"ticket_id": admin_ticket["id"]})
+        self.assertEqual(admin_delete.status, 200)
+
+        user_delete = self.app.handle_json(
+            "POST",
+            "/api/tickets/delete",
+            headers,
+            json.dumps({"ticket_id": ticket["id"]}),
+        )
+        user_after_delete = self.app.handle_json("GET", "/api/tickets", headers, "")
+        admin_after_delete = self.app.handle_json("GET", "/api/admin/tickets", self.admin_headers, "")
+        self.assertEqual(user_delete.status, 200)
+        self.assertEqual(json.loads(user_after_delete.body)["tickets"], [])
+        self.assertEqual(json.loads(admin_after_delete.body)["tickets"], [])
+
     def test_user_cannot_reply_to_another_users_ticket(self):
         owner = self.app.db.register_user("ticket-owner@example.com", "secret123")
         other = self.app.db.register_user("ticket-other@example.com", "secret123")
@@ -371,6 +393,12 @@ class UiFunctionalityPlanTests(unittest.TestCase):
             other_headers,
             json.dumps({"ticket_id": ticket_id, "message": "冒充回复"}),
         )
+        delete_response = self.app.handle_json(
+            "POST",
+            "/api/tickets/delete",
+            other_headers,
+            json.dumps({"ticket_id": ticket_id}),
+        )
 
         self.assertEqual(response.status, 403)
-
+        self.assertEqual(delete_response.status, 403)

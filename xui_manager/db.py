@@ -1685,6 +1685,27 @@ class Database:
             )
         return self.get_ticket(ticket_id)
 
+    def delete_ticket(self, ticket_id: int) -> None:
+        with self.session() as conn:
+            ticket = conn.execute("select id from tickets where id=?", (int(ticket_id),)).fetchone()
+            if not ticket:
+                raise ValueError("工单不存在")
+            conn.execute("delete from ticket_replies where ticket_id=?", (int(ticket_id),))
+            conn.execute("delete from tickets where id=?", (int(ticket_id),))
+
+    def delete_user_ticket(self, ticket_id: int, user_id: int) -> None:
+        with self.session() as conn:
+            ticket = conn.execute(
+                "select id, user_id from tickets where id=?",
+                (int(ticket_id),),
+            ).fetchone()
+            if not ticket:
+                raise ValueError("工单不存在")
+            if int(ticket["user_id"]) != int(user_id):
+                raise PermissionError("无权删除该工单")
+            conn.execute("delete from ticket_replies where ticket_id=?", (int(ticket_id),))
+            conn.execute("delete from tickets where id=?", (int(ticket_id),))
+
     def _decode_ticket(self, conn: sqlite3.Connection, row: sqlite3.Row, include_replies: bool = False) -> dict[str, Any]:
         ticket = dict(row)
         ticket["reply_count"] = int(ticket.get("reply_count") or 0)

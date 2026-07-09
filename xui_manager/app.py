@@ -175,6 +175,15 @@ class XuiManagerApp:
                     return guard
                 ticket = self.db.reply_user_ticket(int(payload["ticket_id"]), user["id"], payload["message"])
                 return self.json_response({"ticket": ticket})
+            if method == "POST" and path == "/api/tickets/delete":
+                user = self.user_from_headers(headers)
+                if not user or user.get("role") != "user":
+                    return self.json_response({"error": "请先登录"}, 401)
+                guard = self.require_mutation_headers(headers)
+                if guard:
+                    return guard
+                self.db.delete_user_ticket(int(payload["ticket_id"]), user["id"])
+                return self.json_response({"deleted": True})
             if method == "GET" and path == "/api/balance/transactions":
                 user = self.user_from_headers(headers)
                 if not user or user.get("role") != "user":
@@ -441,6 +450,9 @@ class XuiManagerApp:
                 payload.get("status", "open"),
             )
             return self.json_response({"ticket": ticket})
+        if method == "POST" and path == "/api/admin/tickets/delete":
+            self.db.delete_ticket(int(payload["ticket_id"]))
+            return self.json_response({"deleted": True})
         return self.json_response({"error": "Not found"}, 404)
 
     def admin_settings(self) -> dict[str, Any]:
